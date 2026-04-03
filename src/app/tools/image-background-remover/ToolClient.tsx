@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 const supportedFormats = ["PNG", "JPG", "JPEG", "WEBP"];
@@ -19,6 +19,26 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function getFriendlyErrorMessage(message: string) {
+  if (message.includes("REMOVE_BG_API_KEY is not configured")) {
+    return "The background removal service is not configured yet. Add your REMOVE_BG_API_KEY and try again.";
+  }
+
+  if (message.includes("payment_required") || message.includes("insufficient credits")) {
+    return "The background removal service has run out of credits. Please top up the API account and retry.";
+  }
+
+  if (message.includes("Unsupported file type")) {
+    return "Unsupported file type. Please upload PNG, JPG, JPEG, or WEBP.";
+  }
+
+  if (message.includes("File is too large")) {
+    return `File is too large. Maximum size is ${maxFileSizeMb}MB.`;
+  }
+
+  return message;
+}
+
 export default function ToolClient() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -33,6 +53,17 @@ export default function ToolClient() {
     if (!selectedFile) return null;
     return `${selectedFile.name} · ${formatBytes(selectedFile.size)}`;
   }, [selectedFile]);
+
+  useEffect(() => {
+    return () => {
+      if (originalPreviewUrl) {
+        URL.revokeObjectURL(originalPreviewUrl);
+      }
+      if (resultPreviewUrl) {
+        URL.revokeObjectURL(resultPreviewUrl);
+      }
+    };
+  }, [originalPreviewUrl, resultPreviewUrl]);
 
   const resetResult = () => {
     setResultPreviewUrl((currentUrl) => {
@@ -127,7 +158,10 @@ export default function ToolClient() {
       const objectUrl = URL.createObjectURL(blob);
       setResultPreviewUrl(objectUrl);
     } catch (processError) {
-      const message = processError instanceof Error ? processError.message : "Something went wrong. Please try again.";
+      const message =
+        processError instanceof Error
+          ? getFriendlyErrorMessage(processError.message)
+          : "Something went wrong. Please try again.";
       setError(message);
     } finally {
       setIsProcessing(false);
@@ -148,9 +182,12 @@ export default function ToolClient() {
     }
   };
 
+  const hasSelection = Boolean(selectedFile);
+  const hasResult = Boolean(resultPreviewUrl);
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-16 text-slate-900 sm:px-10">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900 sm:px-6 sm:py-16 lg:px-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900">
@@ -174,7 +211,7 @@ export default function ToolClient() {
         </header>
 
         <section className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
             <h2 className="text-xl font-semibold">Upload your image</h2>
             <p className="mt-2 text-sm leading-7 text-slate-600">
               Choose a PNG, JPG, JPEG, or WEBP file. We validate the file before
@@ -194,14 +231,14 @@ export default function ToolClient() {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onClick={() => fileInputRef.current?.click()}
-              className={`mt-6 flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed p-8 text-center transition ${
+              className={`mt-6 flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed p-6 text-center transition sm:min-h-72 sm:p-8 ${
                 isDragging
                   ? "border-slate-900 bg-slate-100"
                   : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100"
               }`}
             >
               <p className="text-base font-medium text-slate-700">Drop your image here</p>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 max-w-md text-sm text-slate-500">
                 Drag and drop a file, or click to browse from your device.
               </p>
               <button
@@ -216,7 +253,7 @@ export default function ToolClient() {
             {fileSummary ? (
               <div className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 <p className="text-sm font-medium text-slate-800">Selected file</p>
-                <p className="mt-1 text-sm text-slate-600">{fileSummary}</p>
+                <p className="mt-1 break-all text-sm text-slate-600">{fileSummary}</p>
               </div>
             ) : null}
 
@@ -226,7 +263,7 @@ export default function ToolClient() {
               </div>
             ) : null}
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
                 onClick={processImage}
@@ -243,16 +280,32 @@ export default function ToolClient() {
                 Reset
               </button>
             </div>
+
+            <div className="mt-6 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <h3 className="text-sm font-semibold text-slate-800">How it works</h3>
+              <ol className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
+                <li>1. Upload a supported image file.</li>
+                <li>2. Click remove background to process it.</li>
+                <li>3. Preview the transparent result and download the PNG.</li>
+              </ol>
+            </div>
           </div>
 
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-semibold">Result preview</h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              Preview the original upload or the processed transparent PNG before downloading.
-            </p>
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Result preview</h2>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  Preview the original upload or the processed transparent PNG before downloading.
+                </p>
+              </div>
+              <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+                {hasResult ? "Processed result" : hasSelection ? "Original preview" : "Waiting for upload"}
+              </span>
+            </div>
 
-            <div className="mt-6 rounded-3xl bg-[linear-gradient(45deg,#f8fafc_25%,#e2e8f0_25%,#e2e8f0_50%,#f8fafc_50%,#f8fafc_75%,#e2e8f0_75%,#e2e8f0_100%)] bg-[length:24px_24px] p-5">
-              <div className="flex min-h-80 items-center justify-center rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-slate-200 backdrop-blur">
+            <div className="mt-6 rounded-3xl bg-[linear-gradient(45deg,#f8fafc_25%,#e2e8f0_25%,#e2e8f0_50%,#f8fafc_50%,#f8fafc_75%,#e2e8f0_75%,#e2e8f0_100%)] bg-[length:24px_24px] p-4 sm:p-5">
+              <div className="flex min-h-[18rem] items-center justify-center rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-slate-200 backdrop-blur sm:min-h-80">
                 {resultPreviewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -278,12 +331,12 @@ export default function ToolClient() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {resultPreviewUrl ? (
                 <a
                   href={resultPreviewUrl}
                   download={downloadFileName}
-                  className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500"
+                  className="rounded-full bg-emerald-600 px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-emerald-500"
                 >
                   Download PNG
                 </a>

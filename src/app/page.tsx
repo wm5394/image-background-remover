@@ -15,7 +15,7 @@ const useCases = [
 const faqs = [
   {
     question: "What image formats are supported?",
-    answer: "PNG, JPG, JPEG, and WEBP files are supported in the MVP.",
+    answer: "PNG, JPG, JPEG, and WEBP files are supported in the current version.",
   },
   {
     question: "Do I need to create an account?",
@@ -23,13 +23,64 @@ const faqs = [
   },
   {
     question: "Are my images stored?",
-    answer: "The MVP is designed to process images during the request lifecycle without long-term storage.",
+    answer: "The app is designed to process images during the request lifecycle without long-term storage.",
   },
 ];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Image Background Remover",
+  url: "https://image-background-remover.vercel.app",
+  description:
+    "Remove image backgrounds online in seconds. Upload your photo and download a transparent PNG instantly.",
+};
+
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  applicationCategory: "MultimediaApplication",
+  name: "Image Background Remover",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  description:
+    "A web-based image background remover for generating transparent PNG files from uploaded images.",
+  url: "https://image-background-remover.vercel.app/tools/image-background-remover",
+};
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 py-16 sm:px-10 lg:px-12">
         <header className="flex items-center justify-between gap-4">
           <Link href="/" className="text-lg font-semibold tracking-tight">
@@ -81,8 +132,8 @@ export default function Home() {
               </div>
               <div className="rounded-2xl bg-white/90 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur">
                 <p className="text-sm leading-7 text-slate-600">
-                  Build the core workflow first: upload, process, preview, and
-                  download. This repository now contains the MVP starter.
+                  Upload an image, remove the background, preview the result,
+                  and download a transparent PNG from a single focused workflow.
                 </p>
               </div>
             </div>
@@ -97,7 +148,7 @@ export default function Home() {
             >
               <h2 className="text-lg font-semibold">{feature}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                A focused MVP experience designed to validate demand quickly.
+                A focused product experience designed to solve one job well.
               </p>
             </div>
           ))}
@@ -118,6 +169,31 @@ export default function Home() {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section className="grid gap-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:grid-cols-2">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Why use this tool?</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Image Background Remover is built for speed and clarity. Instead of a large,
+              complex editor, it gives users a quick path from upload to transparent PNG.
+            </p>
+          </div>
+          <div className="grid gap-4">
+            <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+              <h3 className="text-base font-semibold">Fast workflow</h3>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                Go from image upload to background-free export in just a few clicks.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+              <h3 className="text-base font-semibold">Useful output</h3>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                Download a transparent PNG suitable for product listings, profile graphics,
+                thumbnails, and visual assets.
+              </p>
+            </div>
+          </div>
         </section>
 
         <section id="faq" className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
